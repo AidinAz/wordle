@@ -1,6 +1,6 @@
 # Wordle — Terminal Edition
 
-A command-line clone of the classic [Wordle](https://www.nytimes.com/games/wordle/index.html) word-guessing game, written in Python.
+A command-line clone of the classic [Wordle] word-guessing game, written in Python.
 
 ## How to play
 
@@ -47,7 +47,8 @@ Edit [src/config.py](src/config.py) to tweak the game:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `WORD_LENGTH` | `5` | Number of letters in the secret word |
-| `LIMIT` | `1000` | Only the top-N most frequent words are used |
+| `ANSWER_LIMIT` | `2000` | The secret is drawn from the N most frequent words of that length |
+| `MAX_TRIES` | `6` | Number of guesses allowed |
 | `DATA_PATH` | `data/words.txt` | Path to the word frequency list |
 
-Increasing `LIMIT` makes the game harder (rarer words can be chosen); decreasing it keeps answers common and familiar.
+Increasing `ANSWER_LIMIT` makes the game harder (rarer words can be chosen); decreasing it keeps answers common and familiar. The limit only restricts the *secret* — any word of the right length in the list is accepted as a guess.

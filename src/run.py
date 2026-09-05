@@ -1,11 +1,10 @@
-from config import WORD_LENGTH
 from words import load_words
 from game import play
 
 
 def main():
-    words = load_words()
-    play(words, WORD_LENGTH)
+    answers, accepted = load_words()
+    play(answers, accepted)
 
 
 if __name__ == '__main__':
