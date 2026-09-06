@@ -1,9 +1,12 @@
 import random
 from collections import Counter
-from display import print_success, print_warning, print_gray
+from display import (colorize, print_success, print_warning,
+                     GREEN_FG, YELLOW_FG, GRAY_FG)
 from config import WORD_LENGTH, MAX_TRIES
 
 GREEN, YELLOW, GRAY = 'green', 'yellow', 'gray'
+
+COLOUR_CODES = {GREEN: GREEN_FG, YELLOW: YELLOW_FG, GRAY: GRAY_FG}
 
 
 def score_guess(word: str, guess: str) -> list[str]:
@@ -25,15 +28,36 @@ def score_guess(word: str, guess: str) -> list[str]:
     return result
 
 
+def render_row(guess: str, colours: list[str]) -> str:
+    return ' '.join(colorize(g_letter.upper(), COLOUR_CODES[colour])
+                    for g_letter, colour in zip(guess, colours))
+
+
+def print_board(history: list[tuple[str, list[str]]]) -> None:
+    print()
+    for guess, colours in history:
+        print(render_row(guess, colours))
+    print()
+
+
 def play(answers: list[str], accepted: set[str], word_length: int = WORD_LENGTH,
          max_tries: int = MAX_TRIES) -> None:
     word = random.choice(answers)
     number_try = 0
+    history: list[tuple[str, list[str]]] = []
 
     while True:
-        guess = input(f'Enter a {word_length} letter word (or q to exit): ').strip().lower()
+        prompt = (f'Guess {number_try + 1}/{max_tries} — enter a {word_length} '
+                  f'letter word (or q to exit): ')
+        try:
+            guess = input(prompt).strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            print(f'Goodbye! The word was "{word}".')
+            break
 
         if guess == 'q':
+            print(f'Goodbye! The word was "{word}".')
             break
 
         if len(guess) != word_length:
@@ -44,13 +68,8 @@ def play(answers: list[str], accepted: set[str], word_length: int = WORD_LENGTH,
             print_warning(f'Word "{guess}" is not in the list of valid words!')
             continue
 
-        for g_letter, colour in zip(guess, score_guess(word, guess)):
-            if colour == GREEN:
-                print_success(g_letter)
-            elif colour == YELLOW:
-                print_warning(g_letter)
-            else:
-                print_gray(g_letter)
+        history.append((guess, score_guess(word, guess)))
+        print_board(history)
 
         if guess == word:
             print_success(f'Congratulations! You guessed the word "{word}" in {number_try + 1} tries!')
