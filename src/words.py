@@ -1,16 +1,18 @@
-from config import DATA_PATH, ANSWERS_PATH, WORD_LENGTH, ANSWER_LIMIT
+from config import (DATA_PATH, ANSWERS_PATH, WORD_LENGTH, ANSWER_LIMIT,
+                    MIN_GUESS_FREQUENCY)
 
 CURATED_LENGTH = 5
 
 
 def load_words(file_path=DATA_PATH, word_length=WORD_LENGTH,
-               limit=ANSWER_LIMIT, answers_path=ANSWERS_PATH) -> tuple[list[str], set[str]]:
+               limit=ANSWER_LIMIT, answers_path=ANSWERS_PATH,
+               min_frequency=MIN_GUESS_FREQUENCY) -> tuple[list[str], set[str]]:
 
     words_frequency = []
     with open(file_path) as f:
         for line in f:
             word, frequency = line.split(', ')
-            if len(word) == word_length:
+            if len(word) == word_length and int(frequency) >= min_frequency:
                 words_frequency.append((word, int(frequency)))
 
     words_frequency.sort(key=lambda w_freq: w_freq[1], reverse=True)
