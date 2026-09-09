@@ -27,13 +27,27 @@ python run.py
 
 Then type a 5-letter word and press Enter. Type `q` to quit at any time.
 
+## Hard mode
+
+```bash
+python run.py --hard
+```
+
+Hard mode makes every hint binding — you can no longer throw away a turn on a word that ignores what you've already learned:
+
+- A **green** letter is locked to its position and must stay there in every later guess.
+- A **yellow** letter must appear somewhere in every later guess, though *not* necessarily in a new spot — leaving it where it was rejected is allowed.
+- **Gray** letters are still fair game. Real Wordle never blocks a letter you've ruled out, and neither does this.
+
+Guesses that break a rule are rejected with an explanation and **don't cost you a try**, exactly like a misspelling or a word of the wrong length.
+
 ## Project structure
 
 ```
 src/
-├── run.py       # Entry point
+├── run.py       # Entry point and CLI flags
 ├── config.py    # Word length, guess limit, data path
-├── game.py      # Game loop and guess-checking logic
+├── game.py      # Game loop, guess-checking, and hard-mode rules
 ├── display.py   # Coloured terminal output helpers
 ├── words.py     # Word list loader (answer pool + accepted guesses)
 └── data/
@@ -50,6 +64,7 @@ Edit [src/config.py](src/config.py) to tweak the game:
 | `WORD_LENGTH` | `5` | Number of letters in the secret word |
 | `ANSWER_LIMIT` | `2000` | Size of the fallback answer pool — only used when `WORD_LENGTH` is not 5 |
 | `MAX_TRIES` | `6` | Number of guesses allowed |
+| `HARD_MODE` | `False` | Require every revealed hint to be reused — set it here to make hard mode the default, or pass `--hard` per game |
 | `MIN_GUESS_FREQUENCY` | `50000` | Minimum corpus frequency for a word to be accepted as a guess — filters scanner noise out of the 333 k-word list |
 | `DATA_PATH` | `data/words.txt` | Path to the word frequency list |
 | `ANSWERS_PATH` | `data/answers.txt` | Path to the curated 5-letter answer list |
