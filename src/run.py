@@ -7,7 +7,8 @@ from config import HARD_MODE
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Play Wordle in your terminal.')
-    parser.add_argument('--hard', action='store_true', default=HARD_MODE,
+    parser.add_argument('--hard', action=argparse.BooleanOptionalAction,
+                        default=HARD_MODE,
                         help='hard mode: every revealed hint must be reused')
     return parser.parse_args()
 

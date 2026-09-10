@@ -41,6 +41,12 @@ Hard mode makes every hint binding — you can no longer throw away a turn on a 
 
 Guesses that break a rule are rejected with an explanation and **don't cost you a try**, exactly like a misspelling or a word of the wrong length.
 
+If you've made hard mode the default by setting `HARD_MODE = True` in [src/config.py](src/config.py), `--no-hard` turns it back off for a single game:
+
+```bash
+python run.py --no-hard
+```
+
 ## Project structure
 
 ```
@@ -64,7 +70,7 @@ Edit [src/config.py](src/config.py) to tweak the game:
 | `WORD_LENGTH` | `5` | Number of letters in the secret word |
 | `ANSWER_LIMIT` | `2000` | Size of the fallback answer pool — only used when `WORD_LENGTH` is not 5 |
 | `MAX_TRIES` | `6` | Number of guesses allowed |
-| `HARD_MODE` | `False` | Require every revealed hint to be reused — set it here to make hard mode the default, or pass `--hard` per game |
+| `HARD_MODE` | `False` | Require every revealed hint to be reused — set it here to make hard mode the default, or override it per game with `--hard` / `--no-hard` |
 | `MIN_GUESS_FREQUENCY` | `50000` | Minimum corpus frequency for a word to be accepted as a guess — filters scanner noise out of the 333 k-word list |
 | `DATA_PATH` | `data/words.txt` | Path to the word frequency list |
 | `ANSWERS_PATH` | `data/answers.txt` | Path to the curated 5-letter answer list |
