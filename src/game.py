@@ -8,6 +8,10 @@ GREEN, YELLOW, GRAY = 'green', 'yellow', 'gray'
 
 COLOUR_CODES = {GREEN: GREEN_FG, YELLOW: YELLOW_FG, GRAY: GRAY_FG}
 
+COLOUR_RANK = {GRAY: 0, YELLOW: 1, GREEN: 2}
+
+KEYBOARD_ROWS = ('qwertyuiop', 'asdfghjkl', 'zxcvbnm')
+
 
 def score_guess(word: str, guess: str) -> list[str]:
     
@@ -33,16 +37,45 @@ def render_row(guess: str, colours: list[str]) -> str:
                     for g_letter, colour in zip(guess, colours))
 
 
+def render_keyboard(statuses: dict[str, str]) -> str:
+    rows = []
+
+    for indent, letters in zip((0, 1, 3), KEYBOARD_ROWS):
+        keys = []
+        for letter in letters:
+            colour = statuses.get(letter)
+            keys.append(letter.upper() if colour is None
+                        else colorize(letter.upper(), COLOUR_CODES[colour]))
+        rows.append(' ' * indent + ' '.join(keys))
+
+    return '\n'.join(rows)
+
+
 def print_board(history: list[tuple[str, list[str]]]) -> None:
     print()
     for guess, colours in history:
         print(render_row(guess, colours))
+    print()
+    print(render_keyboard(letter_statuses(history)))
     print()
 
 
 def ordinal(n: int) -> str:
     suffix = 'th' if 4 <= n <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
     return f'{n}{suffix}'
+
+
+def letter_statuses(history: list[tuple[str, list[str]]]) -> dict[str, str]:
+
+    statuses: dict[str, str] = {}
+
+    for guess, colours in history:
+        for g_letter, colour in zip(guess, colours):
+            known = statuses.get(g_letter)
+            if known is None or COLOUR_RANK[colour] > COLOUR_RANK[known]:
+                statuses[g_letter] = colour
+
+    return statuses
 
 
 def hard_mode_constraints(

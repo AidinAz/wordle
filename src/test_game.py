@@ -1,6 +1,6 @@
 import unittest
 
-from game import score_guess, hard_mode_violation
+from game import score_guess, hard_mode_violation, letter_statuses
 
 
 class TestScoreGuess(unittest.TestCase):
@@ -100,6 +100,59 @@ class TestHardModeViolation(unittest.TestCase):
             ('elbow', ['yellow', 'gray', 'gray', 'gray', 'gray']),
         ]
         self.assertIsNone(hard_mode_violation(history, 'medal'))
+
+
+class TestLetterStatuses(unittest.TestCase):
+
+    def test_empty_history_knows_nothing(self):
+        self.assertEqual(letter_statuses([]), {})
+
+    def test_single_guess_records_each_letter(self):
+        history = [('crane', ['gray', 'gray', 'yellow', 'gray', 'green'])]
+        self.assertEqual(
+            letter_statuses(history),
+            {'c': 'gray', 'r': 'gray', 'a': 'yellow', 'n': 'gray', 'e': 'green'},
+        )
+
+    def test_untried_letters_are_absent(self):
+        history = [('crane', ['gray', 'gray', 'gray', 'gray', 'gray'])]
+        self.assertNotIn('z', letter_statuses(history))
+
+    def test_gray_then_green_upgrades(self):
+        history = [
+            ('toils', ['gray', 'gray', 'gray', 'gray', 'gray']),
+            ('stoat', ['gray', 'gray', 'gray', 'gray', 'green']),
+        ]
+        self.assertEqual(letter_statuses(history)['t'], 'green')
+
+    def test_green_is_never_downgraded_by_a_later_gray(self):
+        history = [
+            ('stoat', ['gray', 'gray', 'gray', 'gray', 'green']),
+            ('toils', ['gray', 'gray', 'gray', 'gray', 'gray']),
+        ]
+        self.assertEqual(letter_statuses(history)['t'], 'green')
+
+    def test_yellow_then_green_upgrades(self):
+        history = [
+            ('crane', ['gray', 'gray', 'yellow', 'gray', 'gray']),
+            ('plant', ['gray', 'gray', 'green', 'gray', 'gray']),
+        ]
+        self.assertEqual(letter_statuses(history)['a'], 'green')
+
+    def test_yellow_is_never_downgraded_by_a_later_gray(self):
+        history = [
+            ('crane', ['gray', 'gray', 'yellow', 'gray', 'gray']),
+            ('plant', ['gray', 'gray', 'gray', 'gray', 'gray']),
+        ]
+        self.assertEqual(letter_statuses(history)['a'], 'yellow')
+
+    def test_duplicate_letter_yellow_beats_gray_within_one_guess(self):
+        history = [('sheep', score_guess('elbow', 'sheep'))]
+        self.assertEqual(letter_statuses(history)['e'], 'yellow')
+
+    def test_duplicate_letter_green_beats_gray_within_one_guess(self):
+        history = [('ppppp', score_guess('apple', 'ppppp'))]
+        self.assertEqual(letter_statuses(history)['p'], 'green')
 
 
 if __name__ == '__main__':
