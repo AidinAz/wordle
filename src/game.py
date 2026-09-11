@@ -160,7 +160,9 @@ def play(answers: list[str], accepted: set[str], word_length: int = WORD_LENGTH,
         print_board(history)
 
         if guess == word:
-            print_success(f'Congratulations! You guessed the word "{word}" in {number_try + 1} tries!')
+            tries = number_try + 1
+            noun = 'try' if tries == 1 else 'tries'
+            print_success(f'Congratulations! You guessed the word "{word}" in {tries} {noun}!')
             break
 
         number_try += 1
