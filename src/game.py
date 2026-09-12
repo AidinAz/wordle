@@ -61,7 +61,7 @@ def print_board(history: list[tuple[str, list[str]]]) -> None:
 
 
 def ordinal(n: int) -> str:
-    suffix = 'th' if 4 <= n <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+    suffix = 'th' if 11 <= n % 100 <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
     return f'{n}{suffix}'
 
 
