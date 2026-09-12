@@ -7,7 +7,7 @@ import display
 from display import GREEN_FG
 from game import (score_guess, hard_mode_violation, letter_statuses,
                   validate_guess, render_row, render_keyboard, render_blank_row,
-                  render_frame, play)
+                  render_frame, play, ask_play_again)
 
 
 class TestScoreGuess(unittest.TestCase):
@@ -313,8 +313,24 @@ class TestPlayLoop(DisplayModeMixin, unittest.TestCase):
         with mock.patch('random.choice', return_value=word), \
              mock.patch('builtins.input', side_effect=guesses), \
              contextlib.redirect_stdout(out):
-            play([word], accepted, max_tries=max_tries)
+            self.result = play([word], accepted, max_tries=max_tries)
         return out.getvalue()
+
+    def test_win_reports_a_finished_game(self):
+        self.run_game('slate', ['slate'], {'slate'})
+        self.assertTrue(self.result)
+
+    def test_loss_reports_a_finished_game(self):
+        self.run_game('slate', ['crane'], {'crane'}, max_tries=1)
+        self.assertTrue(self.result)
+
+    def test_quitting_reports_an_unfinished_game(self):
+        self.run_game('slate', ['crane', 'q'], {'slate', 'crane'})
+        self.assertFalse(self.result)
+
+    def test_end_of_input_reports_an_unfinished_game(self):
+        self.run_game('slate', ['crane', EOFError], {'slate', 'crane'})
+        self.assertFalse(self.result)
 
     def test_repeated_guess_does_not_burn_a_try(self):
         output = self.run_game('slate', ['crane', 'crane', 'slate'],
@@ -342,6 +358,34 @@ class TestPlayLoop(DisplayModeMixin, unittest.TestCase):
                                {'crane', 'plant'}, max_tries=2)
         self.assertIn('used all your tries', output)
         self.assertIn('slate', output)
+
+
+class TestAskPlayAgain(DisplayModeMixin, unittest.TestCase):
+
+    def ask(self, answers):
+        out = io.StringIO()
+        with mock.patch('builtins.input', side_effect=answers), \
+             contextlib.redirect_stdout(out):
+            result = ask_play_again()
+        return result, out.getvalue()
+
+    def test_enter_and_yes_play_again(self):
+        for answer in ('', 'y', 'YES'):
+            with self.subTest(answer=answer):
+                self.assertTrue(self.ask([answer])[0])
+
+    def test_no_and_q_stop(self):
+        for answer in ('n', 'no', 'q'):
+            with self.subTest(answer=answer):
+                self.assertFalse(self.ask([answer])[0])
+
+    def test_end_of_input_stops(self):
+        self.assertFalse(self.ask([EOFError])[0])
+
+    def test_unclear_answer_asks_again(self):
+        result, output = self.ask(['maybe', 'n'])
+        self.assertFalse(result)
+        self.assertIn('Please answer y or n.', output)
 
 
 if __name__ == '__main__':

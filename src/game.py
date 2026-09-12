@@ -33,7 +33,6 @@ def score_guess(word: str, guess: str) -> list[str]:
 
 
 def render_cell(letter: str, colour: str | None) -> str:
-    """One board or keyboard cell: 1 char wide in colour, 3 chars in plain text."""
     if use_colour():
         return (letter.upper() if colour is None
                 else colorize(letter.upper(), COLOUR_CODES[colour]))
@@ -43,8 +42,8 @@ def render_cell(letter: str, colour: str | None) -> str:
     if colour == YELLOW:
         return f'({letter.upper()})'
     if colour == GRAY:
-        return f' {letter.lower()} '  # ruled out
-    return f' {letter.upper()} '      # untried
+        return f' {letter.lower()} '
+    return f' {letter.upper()} '
 
 
 def render_row(guess: str, colours: list[str]) -> str:
@@ -81,7 +80,6 @@ def render_frame(history: list[tuple[str, list[str]]], message: str | None = Non
         lines.append('')
         lines.append(render_keyboard(letter_statuses(history)))
         lines.append('')
-        # Always reserve the message line so the prompt never jumps.
         lines.append(colorize(message, YELLOW_FG) if message else '')
     elif message:
         lines.append(colorize(message, YELLOW_FG))
@@ -183,7 +181,7 @@ def validate_guess(guess: str, accepted: set[str],
 
 
 def play(answers: list[str], accepted: set[str], word_length: int = WORD_LENGTH,
-         max_tries: int = MAX_TRIES, hard: bool = HARD_MODE) -> None:
+         max_tries: int = MAX_TRIES, hard: bool = HARD_MODE) -> bool:
     word = random.choice(answers)
     history: list[tuple[str, list[str]]] = []
     message: str | None = None
@@ -200,15 +198,15 @@ def play(answers: list[str], accepted: set[str], word_length: int = WORD_LENGTH,
         except (EOFError, KeyboardInterrupt):
             print()
             print(f'Goodbye! The word was "{word}".')
-            break
+            return False
 
         if guess == 'q':
             print(f'Goodbye! The word was "{word}".')
-            break
+            return False
 
         message = validate_guess(guess, accepted, history, word_length, hard)
         if message:
-            continue  # no try consumed
+            continue
 
         history.append((guess, score_guess(word, guess)))
         solved = guess == word
@@ -222,4 +220,19 @@ def play(answers: list[str], accepted: set[str], word_length: int = WORD_LENGTH,
                               f'in {tries} {noun}!')
             else:
                 print(f'You have used all your tries! The word was "{word}".')
-            break
+            return True
+
+
+def ask_play_again() -> bool:
+    while True:
+        try:
+            answer = input('Play again? [Y/n]: ').strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return False
+
+        if answer in ('', 'y', 'yes'):
+            return True
+        if answer in ('n', 'no', 'q'):
+            return False
+        print(colorize('Please answer y or n.', YELLOW_FG))
