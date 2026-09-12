@@ -1,7 +1,7 @@
 import random
 from collections import Counter
-from display import (colorize, print_success, print_warning,
-                     GREEN_FG, YELLOW_FG, GRAY_FG)
+from display import (colorize, clear_sequence, print_success, use_colour,
+                     use_screen_control, GREEN_FG, YELLOW_FG, GRAY_FG)
 from config import WORD_LENGTH, MAX_TRIES, HARD_MODE
 
 GREEN, YELLOW, GRAY = 'green', 'yellow', 'gray'
@@ -32,32 +32,73 @@ def score_guess(word: str, guess: str) -> list[str]:
     return result
 
 
+def render_cell(letter: str, colour: str | None) -> str:
+    """One board or keyboard cell: 1 char wide in colour, 3 chars in plain text."""
+    if use_colour():
+        return (letter.upper() if colour is None
+                else colorize(letter.upper(), COLOUR_CODES[colour]))
+
+    if colour == GREEN:
+        return f'[{letter.upper()}]'
+    if colour == YELLOW:
+        return f'({letter.upper()})'
+    if colour == GRAY:
+        return f' {letter.lower()} '  # ruled out
+    return f' {letter.upper()} '      # untried
+
+
 def render_row(guess: str, colours: list[str]) -> str:
-    return ' '.join(colorize(g_letter.upper(), COLOUR_CODES[colour])
+    return ' '.join(render_cell(g_letter, colour)
                     for g_letter, colour in zip(guess, colours))
 
 
+def render_blank_row(word_length: int = WORD_LENGTH) -> str:
+    slot = '_' if use_colour() else ' _ '
+    return colorize(' '.join([slot] * word_length), GRAY_FG)
+
+
 def render_keyboard(statuses: dict[str, str]) -> str:
+    unit = 1 if use_colour() else 2
     rows = []
 
     for indent, letters in zip((0, 1, 3), KEYBOARD_ROWS):
-        keys = []
-        for letter in letters:
-            colour = statuses.get(letter)
-            keys.append(letter.upper() if colour is None
-                        else colorize(letter.upper(), COLOUR_CODES[colour]))
-        rows.append(' ' * indent + ' '.join(keys))
+        keys = ' '.join(render_cell(letter, statuses.get(letter))
+                        for letter in letters)
+        rows.append(' ' * (indent * unit) + keys)
 
     return '\n'.join(rows)
 
 
-def print_board(history: list[tuple[str, list[str]]]) -> None:
-    print()
-    for guess, colours in history:
-        print(render_row(guess, colours))
-    print()
-    print(render_keyboard(letter_statuses(history)))
-    print()
+def render_frame(history: list[tuple[str, list[str]]], message: str | None = None,
+                 word_length: int = WORD_LENGTH,
+                 max_tries: int = MAX_TRIES) -> str:
+    lines: list[str] = []
+
+    if use_screen_control():
+        lines.append('')
+        lines.extend(render_row(guess, colours) for guess, colours in history)
+        lines.extend([render_blank_row(word_length)] * (max_tries - len(history)))
+        lines.append('')
+        lines.append(render_keyboard(letter_statuses(history)))
+        lines.append('')
+        # Always reserve the message line so the prompt never jumps.
+        lines.append(colorize(message, YELLOW_FG) if message else '')
+    elif message:
+        lines.append(colorize(message, YELLOW_FG))
+    elif history:
+        guess, colours = history[-1]
+        lines.extend(['', render_row(guess, colours), '',
+                      render_keyboard(letter_statuses(history)), ''])
+
+    return '\n'.join(lines)
+
+
+def draw_frame(history: list[tuple[str, list[str]]], message: str | None = None,
+               word_length: int = WORD_LENGTH,
+               max_tries: int = MAX_TRIES) -> None:
+    frame = clear_sequence() + render_frame(history, message, word_length, max_tries)
+    if frame:
+        print(frame)
 
 
 def ordinal(n: int) -> str:
@@ -121,15 +162,38 @@ def hard_mode_violation(history: list[tuple[str, list[str]]],
     return None
 
 
+def validate_guess(guess: str, accepted: set[str],
+                   history: list[tuple[str, list[str]]],
+                   word_length: int = WORD_LENGTH,
+                   hard: bool = HARD_MODE) -> str | None:
+
+    if len(guess) != word_length:
+        return f'Word must have {word_length} letters. You entered {len(guess)}!'
+
+    if guess not in accepted:
+        return f'Word "{guess}" is not in the list of valid words!'
+
+    if any(guess == previous for previous, _ in history):
+        return f'You already guessed "{guess}". Try a new word!'
+
+    if hard:
+        return hard_mode_violation(history, guess)
+
+    return None
+
+
 def play(answers: list[str], accepted: set[str], word_length: int = WORD_LENGTH,
          max_tries: int = MAX_TRIES, hard: bool = HARD_MODE) -> None:
     word = random.choice(answers)
-    number_try = 0
     history: list[tuple[str, list[str]]] = []
+    message: str | None = None
 
     while True:
+        draw_frame(history, message, word_length, max_tries)
+        message = None
+
         mode = ' [hard]' if hard else ''
-        prompt = (f'Guess {number_try + 1}/{max_tries}{mode} — enter a '
+        prompt = (f'Guess {len(history) + 1}/{max_tries}{mode} — enter a '
                   f'{word_length} letter word (or q to exit): ')
         try:
             guess = input(prompt).strip().lower()
@@ -142,30 +206,20 @@ def play(answers: list[str], accepted: set[str], word_length: int = WORD_LENGTH,
             print(f'Goodbye! The word was "{word}".')
             break
 
-        if len(guess) != word_length:
-            print_warning(f'Word must have {word_length} letters. You entered {len(guess)}!')
-            continue
-
-        if guess not in accepted:
-            print_warning(f'Word "{guess}" is not in the list of valid words!')
-            continue
-
-        if hard:
-            violation = hard_mode_violation(history, guess)
-            if violation:
-                print_warning(violation)
-                continue
+        message = validate_guess(guess, accepted, history, word_length, hard)
+        if message:
+            continue  # no try consumed
 
         history.append((guess, score_guess(word, guess)))
-        print_board(history)
+        solved = guess == word
 
-        if guess == word:
-            tries = number_try + 1
-            noun = 'try' if tries == 1 else 'tries'
-            print_success(f'Congratulations! You guessed the word "{word}" in {tries} {noun}!')
-            break
-
-        number_try += 1
-        if number_try >= max_tries:
-            print(f'You have used all your tries! The word was "{word}".')
+        if solved or len(history) >= max_tries:
+            draw_frame(history, None, word_length, max_tries)
+            if solved:
+                tries = len(history)
+                noun = 'try' if tries == 1 else 'tries'
+                print_success(f'Congratulations! You guessed the word "{word}" '
+                              f'in {tries} {noun}!')
+            else:
+                print(f'You have used all your tries! The word was "{word}".')
             break

@@ -6,11 +6,13 @@ A command-line clone of the classic [Wordle] word-guessing game, written in Pyth
 
 Guess a secret 5-letter word in **6 tries**. After each guess the letters are coloured to show how close you were:
 
-| Colour | Meaning |
-|--------|---------|
-| **Green** | Correct letter, correct position |
-| **Yellow** | Letter is in the word, but wrong position |
-| **Gray** | Letter is not in the word |
+| Colour | Plain text | Meaning |
+|--------|------------|---------|
+| **Green** | `[A]` | Correct letter, correct position |
+| **Yellow** | `(A)` | Letter is in the word, but wrong position |
+| **Gray** | ` a ` | Letter is not in the word |
+
+The plain-text column is what you get when colour is switched off — see [Colour and output](#colour-and-output).
 
 ## Requirements
 
@@ -27,6 +29,22 @@ python run.py
 
 Then type a 5-letter word and press Enter. Type `q` to quit at any time.
 
+The board is redrawn in place after every guess, and a keyboard underneath tracks which letters are still in play. Repeating a word you've already guessed is refused for free, so a slip of the memory never costs you a turn.
+
+## Colour and output
+
+The game adapts to where its output is going:
+
+| Situation | Behaviour |
+|-----------|-----------|
+| A terminal | Colour, redrawn in place |
+| `NO_COLOR=1` | Plain-text glyphs, still redrawn in place |
+| Piped or redirected | Plain text, appended as a transcript — no escape codes |
+| `FORCE_COLOR=1` | Keeps colour through a pipe, for `less -R` and friends |
+| `TERM=dumb` | Plain text, no redrawing |
+
+Colour and redrawing are decided separately: [`NO_COLOR`](https://no-color.org) means "don't colour", not "don't redraw", so an accessible session still gets the in-place board. When the screen isn't ours, each guess is appended as a single row instead of reprinting the whole board, which keeps a piped transcript readable.
+
 ## Hard mode
 
 ```bash
@@ -39,7 +57,7 @@ Hard mode makes every hint binding — you can no longer throw away a turn on a 
 - A **yellow** letter must appear somewhere in every later guess, though *not* necessarily in a new spot — leaving it where it was rejected is allowed.
 - **Gray** letters are still fair game. Real Wordle never blocks a letter you've ruled out, and neither does this.
 
-Guesses that break a rule are rejected with an explanation and **don't cost you a try**, exactly like a misspelling or a word of the wrong length.
+Guesses that break a rule are rejected with an explanation and **don't cost you a try**, exactly like a misspelling, a repeat, or a word of the wrong length.
 
 If you've made hard mode the default by setting `HARD_MODE = True` in [src/config.py](src/config.py), `--no-hard` turns it back off for a single game:
 
@@ -53,8 +71,8 @@ python run.py --no-hard
 src/
 ├── run.py       # Entry point and CLI flags
 ├── config.py    # Word length, guess limit, data path
-├── game.py      # Game loop, guess-checking, and hard-mode rules
-├── display.py   # Coloured terminal output helpers
+├── game.py      # Game loop, guess-checking, rendering, and hard-mode rules
+├── display.py   # Colour/TTY detection, screen control, output helpers
 ├── words.py     # Word list loader (answer pool + accepted guesses)
 └── data/
     ├── words.txt    # ~333 k words with frequency scores (accepted guesses)
