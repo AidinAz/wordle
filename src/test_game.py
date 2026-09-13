@@ -1,8 +1,10 @@
 import contextlib
 import io
 import itertools
+import tempfile
 import unittest
 from collections import Counter
+from pathlib import Path
 from unittest import mock
 
 import display
@@ -10,6 +12,7 @@ from display import GREEN_FG
 from game import (score_guess, hard_mode_violation, letter_statuses,
                   validate_guess, render_row, render_keyboard, render_blank_row,
                   render_frame, play, ask_play_again, shuffled_words)
+from words import load_words
 
 
 class TestScoreGuess(unittest.TestCase):
@@ -417,6 +420,49 @@ class TestShuffledWords(unittest.TestCase):
     def test_empty_pool_raises_instead_of_hanging(self):
         with self.assertRaises(ValueError):
             next(shuffled_words([]))
+
+
+class TestLoadWords(unittest.TestCase):
+
+    FREQUENCIES = ('mygen, 900000\ncrane, 800000\nslate, 700000\n'
+                   'plants, 600000\nrarer, 10\n')
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        (self.dir / 'words.txt').write_text(self.FREQUENCIES)
+        (self.dir / 'answers.txt').write_text('crane\nslate\n\n')
+        (self.dir / 'guesses.txt').write_text('soare\ncrane\n')
+
+    def load(self, word_length=5, guesses='guesses.txt'):
+        return load_words(self.dir / 'words.txt', word_length=word_length,
+                          answers_path=self.dir / 'answers.txt',
+                          guesses_path=self.dir / guesses,
+                          min_frequency=1000)
+
+    def test_guess_list_replaces_the_frequency_filter(self):
+        _, accepted = self.load()
+        self.assertIn('soare', accepted)
+        self.assertNotIn('mygen', accepted)
+
+    def test_answers_are_always_accepted(self):
+        answers, accepted = self.load()
+        self.assertEqual(answers, ['crane', 'slate'])
+        self.assertIn('slate', accepted)
+
+    def test_missing_guess_list_falls_back_to_frequency(self):
+        _, accepted = self.load(guesses='missing.txt')
+        self.assertEqual(accepted, {'mygen', 'crane', 'slate'})
+
+    def test_other_lengths_ignore_the_curated_lists(self):
+        self.assertEqual(self.load(word_length=6), (['plants'], {'plants'}))
+
+    def test_real_word_lists(self):
+        answers, accepted = load_words()
+        self.assertIn('soare', accepted)
+        self.assertNotIn('mygen', accepted)
+        self.assertLessEqual(set(answers), accepted)
 
 
 if __name__ == '__main__':

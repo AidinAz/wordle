@@ -7,3 +7,4 @@ HARD_MODE = False
 MIN_GUESS_FREQUENCY = 50_000
 DATA_PATH = Path(__file__).parent / "data" / "words.txt"
 ANSWERS_PATH = Path(__file__).parent / "data" / "answers.txt"
+GUESSES_PATH = Path(__file__).parent / "data" / "guesses.txt"

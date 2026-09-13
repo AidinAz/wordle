@@ -77,8 +77,10 @@ src/
 ├── display.py   # Colour/TTY detection, screen control, output helpers
 ├── words.py     # Word list loader (answer pool + accepted guesses)
 └── data/
-    ├── words.txt    # ~333 k words with frequency scores (accepted guesses)
-    └── answers.txt  # 2 309 curated 5-letter answers
+    ├── words.txt            # ~333 k words with frequency scores (fallback for other lengths)
+    ├── answers.txt          # 2 309 curated 5-letter answers
+    ├── guesses.txt          # 14 855 accepted 5-letter guesses
+    └── guesses-LICENSE.txt  # MIT license for guesses.txt
 ```
 
 ## Configuration
@@ -91,10 +93,15 @@ Edit [src/config.py](src/config.py) to tweak the game:
 | `ANSWER_LIMIT` | `2000` | Size of the fallback answer pool — only used when `WORD_LENGTH` is not 5 |
 | `MAX_TRIES` | `6` | Number of guesses allowed |
 | `HARD_MODE` | `False` | Require every revealed hint to be reused — set it here to make hard mode the default, or override it per game with `--hard` / `--no-hard` |
-| `MIN_GUESS_FREQUENCY` | `50000` | Minimum corpus frequency for a word to be accepted as a guess — filters scanner noise out of the 333 k-word list |
+| `MIN_GUESS_FREQUENCY` | `50000` | Minimum corpus frequency for a word to be accepted as a guess — only used when `WORD_LENGTH` is not 5 |
 | `DATA_PATH` | `data/words.txt` | Path to the word frequency list |
 | `ANSWERS_PATH` | `data/answers.txt` | Path to the curated 5-letter answer list |
+| `GUESSES_PATH` | `data/guesses.txt` | Path to the curated 5-letter guess list |
 
 At the default `WORD_LENGTH` of 5 the secret is drawn from `answers.txt`, a curated list of 2 309 common words — so you'll never be asked to guess a proper noun or an abbreviation. Any other word length falls back to the `ANSWER_LIMIT` most frequent words of that length, which is a noticeably rougher pool.
 
-The answer pool only restricts the *secret*. A guess just has to be the right length and clear the `MIN_GUESS_FREQUENCY` floor, so you can play far more words than can ever be the answer — about 17 700 at the default 5 letters. The floor exists because `words.txt` is a raw frequency corpus whose long tail is scanner noise (`gvole`, `gpoge`, `goolh`); without it roughly 28 000 of those non-words would be accepted as legitimate guesses. Every curated answer stays guessable regardless of its frequency.
+The answer pool only restricts the *secret*. At 5 letters a guess is checked against `guesses.txt`, the standard list of 14 855 words Wordle accepts, so you can play far more words than can ever be the answer — openers like `soare` and `salet` work, while the proper nouns and junk in a raw frequency corpus (`mygen`, `shupp`, `koepi`) don't. Other word lengths have no curated list, so a guess just has to clear the `MIN_GUESS_FREQUENCY` floor in `words.txt`. The floor exists because that corpus's long tail is scanner noise (`gvole`, `gpoge`, `goolh`), though the odd non-word still slips through. Every curated answer stays guessable either way.
+
+## Credits
+
+The accepted-guess list in `src/data/guesses.txt` comes from [tabatkins/wordle-list](https://github.com/tabatkins/wordle-list) and is used under the MIT License — see [src/data/guesses-LICENSE.txt](src/data/guesses-LICENSE.txt).
