@@ -1,13 +1,15 @@
 import contextlib
 import io
+import itertools
 import unittest
+from collections import Counter
 from unittest import mock
 
 import display
 from display import GREEN_FG
 from game import (score_guess, hard_mode_violation, letter_statuses,
                   validate_guess, render_row, render_keyboard, render_blank_row,
-                  render_frame, play, ask_play_again)
+                  render_frame, play, ask_play_again, shuffled_words)
 
 
 class TestScoreGuess(unittest.TestCase):
@@ -359,6 +361,16 @@ class TestPlayLoop(DisplayModeMixin, unittest.TestCase):
         self.assertIn('used all your tries', output)
         self.assertIn('slate', output)
 
+    def test_given_word_is_used_instead_of_a_random_one(self):
+        out = io.StringIO()
+        with mock.patch('random.choice') as choice, \
+             mock.patch('builtins.input', side_effect=['crane']), \
+             contextlib.redirect_stdout(out):
+            result = play(['slate', 'crane'], {'slate', 'crane'}, word='crane')
+        self.assertTrue(result)
+        self.assertIn('in 1 try', out.getvalue())
+        choice.assert_not_called()
+
 
 class TestAskPlayAgain(DisplayModeMixin, unittest.TestCase):
 
@@ -386,6 +398,25 @@ class TestAskPlayAgain(DisplayModeMixin, unittest.TestCase):
         result, output = self.ask(['maybe', 'n'])
         self.assertFalse(result)
         self.assertIn('Please answer y or n.', output)
+
+
+class TestShuffledWords(unittest.TestCase):
+
+    ANSWERS = ['crane', 'slate', 'plant', 'least']
+
+    def draw(self, n):
+        return list(itertools.islice(shuffled_words(self.ANSWERS), n))
+
+    def test_no_word_repeats_before_the_pool_is_used_up(self):
+        self.assertCountEqual(self.draw(len(self.ANSWERS)), self.ANSWERS)
+
+    def test_pool_is_reshuffled_once_used_up(self):
+        words = self.draw(2 * len(self.ANSWERS))
+        self.assertEqual(Counter(words), {w: 2 for w in self.ANSWERS})
+
+    def test_empty_pool_raises_instead_of_hanging(self):
+        with self.assertRaises(ValueError):
+            next(shuffled_words([]))
 
 
 if __name__ == '__main__':

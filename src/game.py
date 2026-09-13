@@ -1,5 +1,6 @@
 import random
 from collections import Counter
+from collections.abc import Iterator
 from display import (colorize, clear_sequence, print_success, use_colour,
                      use_screen_control, GREEN_FG, YELLOW_FG, GRAY_FG)
 from config import WORD_LENGTH, MAX_TRIES, HARD_MODE
@@ -180,9 +181,18 @@ def validate_guess(guess: str, accepted: set[str],
     return None
 
 
+def shuffled_words(answers: list[str]) -> Iterator[str]:
+    if not answers:
+        raise ValueError('no answers to choose a secret word from')
+    while True:
+        yield from random.sample(answers, len(answers))
+
+
 def play(answers: list[str], accepted: set[str], word_length: int = WORD_LENGTH,
-         max_tries: int = MAX_TRIES, hard: bool = HARD_MODE) -> bool:
-    word = random.choice(answers)
+         max_tries: int = MAX_TRIES, hard: bool = HARD_MODE,
+         word: str | None = None) -> bool:
+    if word is None:
+        word = random.choice(answers)
     history: list[tuple[str, list[str]]] = []
     message: str | None = None
 

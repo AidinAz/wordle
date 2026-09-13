@@ -1,7 +1,7 @@
 import argparse
 
 from words import load_words
-from game import play, ask_play_again
+from game import play, ask_play_again, shuffled_words
 from config import HARD_MODE
 
 
@@ -16,8 +16,10 @@ def parse_args():
 def main():
     args = parse_args()
     answers, accepted = load_words()
-    while play(answers, accepted, hard=args.hard) and ask_play_again():
-        pass
+    for word in shuffled_words(answers):
+        if not (play(answers, accepted, hard=args.hard, word=word)
+                and ask_play_again()):
+            break
 
 
 if __name__ == '__main__':

@@ -29,7 +29,7 @@ python run.py
 
 Then type a 5-letter word and press Enter. Type `q` to quit at any time.
 
-When a game ends, you're asked whether to play again. Press Enter or type `y` for a new word, or `n` to stop. The word list is loaded only once, so the next round starts right away.
+When a game ends, you're asked whether to play again. Press Enter or type `y` for a new word, or `n` to stop. The word list is loaded only once, so the next round starts right away, and no secret word comes up twice until you've played through the whole answer pool.
 
 The board is redrawn in place after every guess, and a keyboard underneath tracks which letters are still in play. Repeating a word you've already guessed is refused for free, so a slip of the memory never costs you a turn.
 
